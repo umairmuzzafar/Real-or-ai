@@ -1,12 +1,13 @@
 import streamlit as st
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
-import time
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import numpy as np
 
 # App configuration
 APP_NAME = "Real or AI"
 APP_ICON = "🔍"
-MODEL_NAME = "facebook/bart-large-mnli"  # Using a more reliable model
+# Using distilbert-base-uncased which doesn't require sentencepiece
+MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
 # Modern 2025 design with custom CSS
 st.set_page_config(
@@ -61,6 +62,11 @@ st.markdown("""
             transition: all 0.3s ease;
             font-weight: 600;
         }
+        
+        .stButton>button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -70,12 +76,8 @@ def load_model():
     try:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        model = AutoModelForSequenceClassification.from_pretrained(
-            MODEL_NAME,
-            device_map="auto" if torch.cuda.is_available() else None
-        )
-        if not torch.cuda.is_available():
-            model = model.to(device)
+        model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+        model = model.to(device)
         return model, tokenizer, device
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
@@ -93,11 +95,13 @@ def main():
         return
     
     # Main UI
-    text = st.text_area("Enter text to analyze:", height=200)
+    text = st.text_area("Enter text to analyze (minimum 20 characters):", height=200)
     
     if st.button("Analyze Text", type="primary"):
         if not text.strip():
             st.warning("Please enter some text to analyze")
+        elif len(text.strip()) < 20:
+            st.warning("Please enter at least 20 characters for better analysis")
         else:
             with st.spinner("Analyzing..."):
                 try:
@@ -110,8 +114,8 @@ def main():
                     
                     # Get probabilities
                     probs = torch.nn.functional.softmax(outputs.logits, dim=1)
-                    human_prob = probs[0][0].item() * 100
-                    ai_prob = probs[0][1].item() * 100
+                    human_prob = probs[0][1].item() * 100  # Assuming positive is human
+                    ai_prob = 100 - human_prob
                     
                     # Display results
                     st.subheader("Results")

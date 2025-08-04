@@ -1,5 +1,8 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=2.2.0,<2.8.0
+--find-links https://huggingface.github.io/transformers/
 transformers>=4.36.0
+--find-links https://huggingface.github.io/transformers/
 sentencepiece>=0.1.99
 protobuf>=3.20.0,<5.0.0
 tqdm>=4.65.0
