@@ -12,10 +12,10 @@ source /home/adminuser/venv/bin/activate
 echo "Upgrading pip and setuptools..."
 pip install --upgrade pip setuptools wheel
 
-echo "Installing Python dependencies..."
-pip install -r requirements.txt
+echo "Installing sentencepiece from pre-built wheel..."
+pip install --no-cache-dir --find-links https://pypi.ngc.nvidia.com sentencepiece
 
-echo "Making Streamlit executable..."
-chmod +x /home/adminuser/venv/bin/streamlit
+echo "Installing other Python dependencies..."
+pip install -r requirements.txt
 
 echo "Installation complete!"

@@ -2,6 +2,7 @@
 torch>=2.0.0
 --find-links https://huggingface.co/transformers/
 transformers>=4.30.0
+--find-links https://pypi.ngc.nvidia.com
 sentencepiece>=0.1.99
 protobuf>=3.20.0
 tqdm>=4.64.0
