@@ -1,0 +1,17 @@
+[server]
+port = 8501
+address = "0.0.0.0"
+enableCORS = false
+enableXsrfProtection = true
+enableWebsocketCompression = false
+enableStaticServing = true
+
+[browser]
+serverAddress = "0.0.0.0"
+gatherUsageStats = false
+
+[runner]
+fixMatplotlib = false
+
+[client]
+showErrorDetails = true

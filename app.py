@@ -1,4 +1,6 @@
 import streamlit as st
+from typing import Tuple
+
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import numpy as np
