@@ -1,274 +1,77 @@
 import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-import numpy as np
-from typing import Tuple
+import sys
 
-# App configuration
-APP_NAME = "Real or AI"
-APP_ICON = "🔍"
-MODEL_NAME = "roberta-base-openai-detector"
-
-# Modern 2025 design with custom CSS
+# Set page config first
 st.set_page_config(
-    page_title=APP_NAME,
-    page_icon=APP_ICON,
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Real or AI",
+    page_icon="🔍",
+    layout="wide"
 )
 
-# Custom CSS for modern design
-st.markdown(f"""
-    <style>
-        :root {{
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --background: #0f172a;
-            --card-bg: #1e293b;
-            --text: #f8fafc;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --error: #ef4444;
-        }}
-        
-        body {{
-            color: var(--text);
-            background-color: var(--background);
-            font-family: 'Inter', sans-serif;
-        }}
-        
-        .stApp {{
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        }}
-        
-        .stTextArea textarea {{
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            color: var(--text) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 16px;
-            min-height: 200px;
-        }}
-        
-        .stButton>button {{
-            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
-            border: none;
-            color: white;
-            padding: 14px 28px;
-            text-align: center;
-            font-size: 16px;
-            margin: 10px 0;
-            border-radius: 12px;
-            width: 100%;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }}
-        
-        .stButton>button:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-        }}
-        
-        .result-card {{
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 24px;
-            margin: 20px 0;
-            border-left: 5px solid var(--primary);
-        }}
-        
-        .confidence-meter {{
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin: 12px 0;
-            overflow: hidden;
-        }}
-        
-        .confidence-level {{
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }}
-        
-        .human {{
-            background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-        }}
-        
-        .ai {{
-            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
-        }}
-        
-        .header {{
-            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
-            padding: 2rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
-            text-align: center;
-        }}
-        
-        .header h1 {{
-            margin: 0;
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: linear-gradient(90deg, #ffffff 0%, #e2e8f0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-        
-        .header p {{
-            margin: 0.5rem 0 0;
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }}
-    </style>
-""", unsafe_allow_html=True)
+# Add error handling for imports
+try:
+    from transformers import __version__ as transformers_version
+    st.sidebar.success(f"Transformers v{transformers_version}")
+except Exception as e:
+    st.error(f"Error importing transformers: {str(e)}")
 
-@st.cache_resource(show_spinner="Loading AI detection model...")
+# Simple UI
+st.title("🔍 Real or AI")
+st.write("Detect if text was written by a human or AI")
+
+# Model loading
+@st.cache_resource
 def load_model():
-    """Load the RoBERTa model for AI text detection"""
     try:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+        model_name = "roberta-base-openai-detector"
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name)
         return model, tokenizer
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
         return None, None
 
-def predict(text: str, model, tokenizer) -> Tuple[float, float]:
-    """Predict if the text is AI or human-generated"""
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
-    with torch.no_grad():
-        outputs = model(**inputs)
-    probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
-    ai_prob = probs[0][1].item()  # Probability that text is AI-generated
-    human_prob = 1 - ai_prob
-    return human_prob, ai_prob
+# Main UI
+text = st.text_area("Enter text to analyze:", height=200)
 
-def main():
-    # Header section
-    st.markdown("""
-        <div class="header">
-            <h1>{APP_NAME} {APP_ICON}</h1>
-            <p>Detect if a text was written by a human or generated by AI</p>
-        </div>
-    """.format(APP_NAME=APP_NAME, APP_ICON=APP_ICON), unsafe_allow_html=True)
-    
-    # Load model
-    model, tokenizer = load_model()
-    
-    # Main content
-    col1, col2 = st.columns([1, 1], gap="large")
-    
-    with col1:
-        st.markdown("### 📝 Enter Text to Analyze")
-        text = st.text_area(
-            "Paste any text below to check if it was written by a human or AI:",
-            placeholder="Type or paste text here...",
-            label_visibility="collapsed"
-        )
-        
-        analyze_btn = st.button("Analyze Text", type="primary", disabled=not model)
-    
-    with col2:
-        st.markdown("### 🔍 Analysis Results")
-        
-        if 'result' not in st.session_state:
-            st.session_state.result = None
-        
-        if analyze_btn and text.strip():
-            with st.spinner("Analyzing text..."):
-                try:
-                    human_prob, ai_prob = predict(text, model, tokenizer)
-                    st.session_state.result = {
-                        'human_prob': human_prob,
-                        'ai_prob': ai_prob,
-                        'text': text[:200] + "..." if len(text) > 200 else text
-                    }
-                except Exception as e:
-                    st.error(f"Error during analysis: {str(e)}")
-                    st.session_state.result = None
-        
-        if st.session_state.result:
-            result = st.session_state.result
-            is_human = result['human_prob'] > 0.5
-            
-            st.markdown("""
-                <div class="result-card">
-                    <h3 style="margin-top: 0; color: {color}">{result}</h3>
-                    <p>Confidence:</p>
-                    <div class="confidence-meter">
-                        <div class="confidence-level {class_name}" style="width: {width}%"></div>
-                    </div>
-                    <p style="text-align: right; margin: 0; opacity: 0.8;">
-                        {confidence:.1f}% confident
-                    </p>
-                </div>
-            """.format(
-                result="Human-written" if is_human else "AI-generated",
-                color="#10b981" if is_human else "#f59e0b",
-                class_name="human" if is_human else "ai",
-                width=result['human_prob' if is_human else 'ai_prob'] * 100,
-                confidence=max(result['human_prob'], result['ai_prob']) * 100
-                        ), unsafe_allow_html=True)
-            
-            # Show text analysis
-            with st.expander("📊 Detailed Analysis", expanded=True):
-                st.markdown("""
-                    <div style="margin: 20px 0;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>Human-written</span>
-                            <span><strong>{human_prob:.1f}%</strong></span>
-                        </div>
-                        <div class="confidence-meter">
-                            <div class="confidence-level human" style="width: {human_width}%"></div>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; margin: 20px 0 8px 0;">
-                            <span>AI-generated</span>
-                            <span><strong>{ai_prob:.1f}%</strong></span>
-                        </div>
-                        <div class="confidence-meter">
-                            <div class="confidence-level ai" style="width: {ai_width}%"></div>
-                        </div>
-                    </div>
+if st.button("Analyze"):
+    if not text.strip():
+        st.warning("Please enter some text to analyze")
+    else:
+        with st.spinner("Analyzing..."):
+            try:
+                model, tokenizer = load_model()
+                if model and tokenizer:
+                    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+                    with torch.no_grad():
+                        outputs = model(**inputs)
+                    probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+                    human_prob = probs[0][0].item() * 100
+                    ai_prob = probs[0][1].item() * 100
                     
-                    <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
-                        <p style="margin: 0 0 10px 0; font-weight: 600;">Analysis:</p>
-                        <p style="margin: 0; opacity: 0.9; line-height: 1.5;">
-                            {analysis_text}
-                        </p>
-                    </div>
-                """.format(
-                    human_prob=result['human_prob'] * 100,
-                    ai_prob=result['ai_prob'] * 100,
-                    human_width=result['human_prob'] * 100,
-                    ai_width=result['ai_prob'] * 100,
-                    analysis_text=(
-                        "This text appears to be " +
-                        ("<span style='color: #10b981; font-weight: 600;'>human-written</span>" if is_human 
-                         else "<span style='color: #f59e0b; font-weight: 600;'>AI-generated</span>") +
-                        ". " +
-                        ("The writing style shows natural variations and inconsistencies typical of human authors."
-                         if is_human 
-                         else "The text exhibits patterns commonly found in AI-generated content, such as consistent tone and structure.")
-                    )
-                                ), unsafe_allow_html=True)
-        else:
-            st.info("Enter some text and click 'Analyze Text' to check if it was written by a human or AI.")
-    
-    # Add some space and footer
-    st.markdown("""
-        <div style="margin-top: 60px; padding: 20px; text-align: center; opacity: 0.7; font-size: 0.9rem;">
-            <hr style="border: 0; height: 1px; background: rgba(255, 255, 255, 0.1); margin: 20px 0;">
-            <p>🔍 Real or AI - An open-source AI text detection tool</p>
-            <p>Built with ❤️ using <a href="https://huggingface.co/" target="_blank">Hugging Face</a> and <a href="https://streamlit.io/" target="_blank">Streamlit</a></p>
-        </div>
-    """, unsafe_allow_html=True)
+                    st.subheader("Results")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Human", f"{human_prob:.1f}%")
+                    with col2:
+                        st.metric("AI", f"{ai_prob:.1f}%")
+                    
+                    if human_prob > ai_prob:
+                        st.success("This text is likely human-written")
+                    else:
+                        st.warning("This text is likely AI-generated")
+            except Exception as e:
+                st.error(f"Error during analysis: {str(e)}")
 
-if __name__ == "__main__":
-    main()
+# Add some info
+st.sidebar.markdown("""
+### About
+This tool helps detect if text was written by a human or generated by AI.
+
+### How it works
+- Uses a fine-tuned RoBERTa model
+- Analyzes text patterns and structures
+- Provides a confidence score for both human and AI
+""")
