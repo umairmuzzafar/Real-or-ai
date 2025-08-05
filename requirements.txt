@@ -2,6 +2,7 @@ torch>=2.0.0
 streamlit>=1.30.0
 transformers>=4.30.0
 numpy
+cmake
 sentencepiece
 protobuf
 tqdm
