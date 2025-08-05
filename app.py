@@ -53,12 +53,12 @@ st.title("Real or AI")
 st.write("Paste text to detect if it was written by a human or AI")
 
 # Text input
-text = st.text_area("Enter text to analyze (minimum 50 characters for better accuracy)", height=200)
+text = st.text_area("Enter text to analyze (minimum 100 characters for better accuracy)", height=200)
 
 @st.cache_resource
 def load_model():
-    # Using a DistilBERT model fine-tuned for text classification
-    model_name = "distilbert-base-uncased-finetuned-sst-2-english"
+    # Using a model specifically trained to detect AI-generated text
+    model_name = "roberta-base-openai-detector"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     return model, tokenizer
@@ -74,16 +74,16 @@ def analyze_text(text):
     # Convert to probabilities
     probabilities = predictions[0].tolist()
     return {
-        "human": probabilities[1],  # Positive sentiment as human-like
-        "ai": probabilities[0]      # Negative sentiment as AI-like
+        "human": probabilities[1],  # Human-written
+        "ai": probabilities[0]      # AI-generated
     }
 
 # Analyze button
 if st.button("Analyze Text"):
-    if len(text) < 50:
-        st.warning("Please enter at least 50 characters for better accuracy")
+    if len(text) < 100:
+        st.warning("Please enter at least 100 characters for better accuracy")
     else:
-        with st.spinner("Analyzing text..."):
+        with st.spinner("Analyzing text (this may take a moment)..."):
             try:
                 result = analyze_text(text)
                 human_score = result["human"] * 100
@@ -112,8 +112,25 @@ if st.button("Analyze Text"):
                     </div>
                 """, unsafe_allow_html=True)
                 
+                # Add some analysis tips
+                if ai_score > 70:
+                    st.info("""
+                    **AI Detection Tips:**
+                    - The text shows strong patterns typical of AI generation
+                    - Look for overly formal or generic language
+                    - Check for lack of personal experiences or specific details
+                    """)
+                elif human_score > 70:
+                    st.info("""
+                    **Human-written Indicators:**
+                    - The text shows natural variations in style
+                    - Contains personal or specific details
+                    - May include informal language or idioms
+                    """)
+                
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
+                st.error("Please try again with a different text or check your internet connection.")
 
 # Footer
 st.markdown("---")
