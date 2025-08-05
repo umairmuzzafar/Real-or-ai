@@ -1,8 +1,8 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=2.0.0
 streamlit>=1.30.0
 transformers>=4.30.0
 numpy
-cmake
-sentencepiece
+sentencepiece==0.1.96
 protobuf
 tqdm
