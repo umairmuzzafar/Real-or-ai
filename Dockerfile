@@ -10,10 +10,13 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt .
+# Install PyTorch first with CUDA support
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Install other requirements
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
 # Copy application code
 COPY . .

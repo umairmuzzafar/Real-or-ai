@@ -1,4 +1,7 @@
-torch==2.0.1
-streamlit==1.30.0
-transformers==4.30.2
-sentencepiece==0.1.99
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch>=2.0.0,<2.8.0
+torchvision
+torchaudio
+streamlit>=1.30.0
+transformers>=4.30.0
+sentencepiece>=0.1.99
